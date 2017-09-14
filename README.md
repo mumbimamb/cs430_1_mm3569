@@ -4,15 +4,13 @@ A converter for PPM files in P3 or P6 format. It prints an error message if an e
 
 Usage
 ====================
-In order to use the program and convert a P3 or P6 image to a P3 image, you must input:
----------------------
+###In order to use the program and convert a P3 or P6 image to a P3 image, you must input:
 
 "ppmrw 3 input.ppm output.ppm"
 
 where "input.ppm" is the input file and "output.ppm" is the output file; "ppmrw" refers to the program and "3" establishes which format you would like the image to be converted to, P3.
 
-In order to convert a P3 or P6 to a P6 image, you must input:
----------------------
+#In order to convert a P3 or P6 to a P6 image, you must input:
 
 "ppmrw 6 input.ppm output.ppm"
 
