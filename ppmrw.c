@@ -7,7 +7,7 @@
 void readInputFile(int ppm_format, char* input_file_name, char* output_file_name);
 void convertToP3(char* buffer, char* p3_r, char* p3_g, char* p3_b, char* p3_a);
 void writeHeaderToOutputFile(char* output_file_name,  char ppm_format, int width, int height, int max_color);
-void writeDataToOutputFile(char* output_file_name, char* p3_r, char* p3_g, char* p3_b, char* p3_a);
+void writeDataToOutputFile(char* output_file_name, char* p3);
 
 // the main function of the program which runs when the program is called
 int main (int argc, char* argv[]) {
@@ -88,9 +88,11 @@ void readInputFile(int ppm_format, char* input_file_name, char* output_file_name
   // find the magic number first, should be the first thing in file
   int magic_num;
   fseek(input_file, 0, SEEK_SET); // set pointer to beginning of file
-  char f_result[100];
+  char f_result[250];
   fscanf(input_file, "%s", f_result);
   magic_num = f_result[1];
+
+  printf("%d", ppm_format);
 
   // find the width, height, and max color value, in the order stated
   int input_width = -1;
@@ -105,7 +107,7 @@ void readInputFile(int ppm_format, char* input_file_name, char* output_file_name
     f_result[0] = fgetc(input_file); // grabs the first
 
     if (f_result[0] == '#') {
-      fgets(f_result, 100, input_file); // check if comment longer
+      fgets(f_result, 250, input_file); // check if comment longer
     }
     else if (isspace(f_result[0])) {
       if (pending_input[0] != 'N') {
@@ -149,58 +151,31 @@ void readInputFile(int ppm_format, char* input_file_name, char* output_file_name
   ///
   // Reading data if the magic number is P6
   ///
-  if (magic_num == '6') {
+  if (ppm_format == 6 || ppm_format == '6') {
     fclose(input_file); // close file so you can read it in binary
 
     FILE* p6_input = fopen(input_file_name, "rb"); // open t
 
-    unsigned char buffer[4];
-    char p3_r[3];
-    char p3_g[3];
-    char p3_b[3];
-    char p3_a[3];
+    unsigned char buffer[8];
+    unsigned char p3[3*input_width*input_height];
 
-      // read one line of info
-    while (fread(buffer, 3, 1, p6_input) == 4) {
-      printf("\n%d, %d, %d, %d\n", buffer[0], buffer[1], buffer[2], buffer[3]);
+    // read one line of info
+    for(int i = 0; i < ((input_width * input_height)); i++) {
+      fread(buffer, 3, 1, p6_input);
+      printf("\n%d, %d, %d\n", buffer[0], buffer[1], buffer[2]);
 
       // convert to p3
 
       // write to file
-      writeDataToOutputFile(output_file_name, p3_r, p3_g, p3_b, p3_a);
+      writeDataToOutputFile(output_file_name, buffer);
 
       // skip a character
       fgetc(p6_input);
     }
-
     fclose(p6_input);
   }
 
   // if magic num not equal to 3 or 6, return null to signify error
-}
-
-/*
-Is only called if the data given is in P6 format. If the input file is already in P3 format then it wil be directly written to
-the output file via the 'writeOutputFile' method.
-*/
-void convertToP3(char* buffer, char* p3_r, char* p3_g, char* p3_b, char* p3_a){
-  for (int i = 3; i <= 3; i++) {
-    char temp_str[12];
-    itoa(buffer[i], temp_str, 2);
-    //snprintf(temp_str, 10, "%d", buffer[i]);
-    if (i == 0) {
-      p3_r = temp_str;
-    }
-    else if (i == 1) {
-      p3_g = temp_str;
-    }
-    else if (i == 2) {
-      p3_b = temp_str;
-    }
-    else if (i == 3) {
-      p3_a = temp_str;
-    }
-  }
 }
 
 /*
@@ -234,13 +209,12 @@ void writeHeaderToOutputFile(char* output_file_name, char ppm_format, int width,
 This function is used to write the data to the output file and is passed the output file name from the arguments.
 All file handling occurs in the function in order to keep things cohesive.
 */
-void writeDataToOutputFile(char* output_file_name, char* p3_r, char* p3_g, char* p3_b, char* p3_a){
+void writeDataToOutputFile(char* output_file_name, char* p3){
   FILE* output_file = fopen(output_file_name, "a"); // should erase the contents of the output file or make new one if doesn't exist
 
-  fprintf(output_file, "%d", p3_r);
-  fprintf(output_file, "%d", p3_g);
-  fprintf(output_file, "%d", p3_b);
-  fprintf(output_file, "%d", p3_a);
+  fprintf(output_file, "%d %d %d", p3[0], p3[1], p3[2]);
 
-  fclose(output_file);// close the file
+  fputs(" ", output_file);
+
+  fclose(output_file); // close the file
 }
