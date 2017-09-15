@@ -4,7 +4,10 @@
 #include "ctype.h" // contains 'isspace method'
 
 // Function Declarations
-void readInputFile(int ppm_format, char* input_file_name);
+void readInputFile(int ppm_format, char* input_file_name, char* output_file_name);
+void convertToP3(char* buffer, char* p3_r, char* p3_g, char* p3_b, char* p3_a);
+void writeHeaderToOutputFile(char* output_file_name,  char ppm_format, int width, int height, int max_color);
+void writeDataToOutputFile(char* output_file_name, char* p3_r, char* p3_g, char* p3_b, char* p3_a);
 
 // the main function of the program which runs when the program is called
 int main (int argc, char* argv[]) {
@@ -54,7 +57,7 @@ int main (int argc, char* argv[]) {
   // Call to method to read in data from input file
   printf("\nReading from the input file, %s, specified in the arguments.\n", argv[2]);
 
-  readInputFile(ppm_format, argv[2]);
+  readInputFile(ppm_format, argv[2], argv[3]);
   // Call to appropriate converter
 
   // Call to method to write data into output file
@@ -71,13 +74,12 @@ int main (int argc, char* argv[]) {
 Reads the file given in the arguments as the input.
 All file handling occurs in the function in order to keep everything cohesive.
 */
-void readInputFile(int ppm_format, char* input_file_name){
+void readInputFile(int ppm_format, char* input_file_name, char* output_file_name){
   FILE* input_file = fopen(input_file_name, "r");
 
   // get length of input file
   fseek(input_file, 0, SEEK_END);
   long file_length = ftell(input_file);
-  char buffer[file_length];
 
   ///
   // Reading header information
@@ -103,7 +105,7 @@ void readInputFile(int ppm_format, char* input_file_name){
     f_result[0] = fgetc(input_file); // grabs the first
 
     if (f_result[0] == '#') {
-      fgets(f_result, 100, input_file);
+      fgets(f_result, 100, input_file); // check if comment longer
     }
     else if (isspace(f_result[0])) {
       if (pending_input[0] != 'N') {
@@ -132,7 +134,7 @@ void readInputFile(int ppm_format, char* input_file_name){
     loop_var = loop_var - 1;
   }
 
-  printf("\nSize of: %ld\n", file_length); // works for both files
+  writeHeaderToOutputFile(output_file_name, ppm_format, input_width, input_height, input_max_color);
 
   ///
   // Reading data if the magic number is P3
@@ -152,10 +154,24 @@ void readInputFile(int ppm_format, char* input_file_name){
 
     FILE* p6_input = fopen(input_file_name, "rb"); // open t
 
-    unsigned char buffer[3];
+    unsigned char buffer[4];
+    char p3_r[3];
+    char p3_g[3];
+    char p3_b[3];
+    char p3_a[3];
 
-    fread(buffer, 3, 1, p6_input);
-    printf("\n%d, %d, %d\n", buffer[0], buffer[1], buffer[1]);
+      // read one line of info
+    while (fread(buffer, 3, 1, p6_input) == 4) {
+      printf("\n%d, %d, %d, %d\n", buffer[0], buffer[1], buffer[2], buffer[3]);
+
+      // convert to p3
+
+      // write to file
+      writeDataToOutputFile(output_file_name, p3_r, p3_g, p3_b, p3_a);
+
+      // skip a character
+      fgetc(p6_input);
+    }
 
     fclose(p6_input);
   }
@@ -167,8 +183,24 @@ void readInputFile(int ppm_format, char* input_file_name){
 Is only called if the data given is in P6 format. If the input file is already in P3 format then it wil be directly written to
 the output file via the 'writeOutputFile' method.
 */
-void convertToP3(int width, int height, int max_color){
-
+void convertToP3(char* buffer, char* p3_r, char* p3_g, char* p3_b, char* p3_a){
+  for (int i = 3; i <= 3; i++) {
+    char temp_str[12];
+    itoa(buffer[i], temp_str, 2);
+    //snprintf(temp_str, 10, "%d", buffer[i]);
+    if (i == 0) {
+      p3_r = temp_str;
+    }
+    else if (i == 1) {
+      p3_g = temp_str;
+    }
+    else if (i == 2) {
+      p3_b = temp_str;
+    }
+    else if (i == 3) {
+      p3_a = temp_str;
+    }
+  }
 }
 
 /*
@@ -180,11 +212,35 @@ void convertToP6(int ppm_format){
 }
 
 /*
+Writes header data into output file.
+*/
+void writeHeaderToOutputFile(char* output_file_name, char ppm_format, int width, int height, int max_color) {
+  FILE* output_file = fopen(output_file_name, "w");
+
+  fputs("P", output_file);
+  fprintf(output_file, "%d", ppm_format);
+  fputs(" ", output_file);
+  fprintf(output_file, "%d", width);
+  fputs(" ", output_file);
+  fprintf(output_file, "%d", height);
+  fputs(" ", output_file);
+  fprintf(output_file, "%d", max_color);
+  fputs("\n", output_file);
+
+  fclose(output_file);
+}
+
+/*
 This function is used to write the data to the output file and is passed the output file name from the arguments.
 All file handling occurs in the function in order to keep things cohesive.
 */
-void writeOutputFile(char* output_file_name){
-FILE* output_file = fopen(output_file_name, "w"); // should erase the contents of the output file or make new one if doesn't exist
+void writeDataToOutputFile(char* output_file_name, char* p3_r, char* p3_g, char* p3_b, char* p3_a){
+  FILE* output_file = fopen(output_file_name, "a"); // should erase the contents of the output file or make new one if doesn't exist
 
-fclose(output_file);// close the file
+  fprintf(output_file, "%d", p3_r);
+  fprintf(output_file, "%d", p3_g);
+  fprintf(output_file, "%d", p3_b);
+  fprintf(output_file, "%d", p3_a);
+
+  fclose(output_file);// close the file
 }
