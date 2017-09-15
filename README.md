@@ -16,13 +16,13 @@ where "input.ppm" is the input file and "output.ppm" is the output file; "ppmrw"
 
 The terms have the same meaning as the p3 format conversion, however, this time "6" designates a conversion to the P6 format.
 
-
 Purpose
 ====================
+The purpose of the ppmrw converter is to convert PPM images from P3 or P6 to P3 or P6 format. If the file is already in P3 format and is prompted to be converted to P3 format, the output file will be a copy of the input file with the original file's comments removed if present. The same action will occur if a P6 image is asked to be converted to a P6 image.
 
 Known Issues
 ====================
-States any issues that the program may have.
+Does not read PPM P3 images. Does not write to the output files, but does read P6 files. As of now, it does read the headers of PPM files.
 
 Authors
 ====================
